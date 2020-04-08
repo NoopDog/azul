@@ -1,7 +1,8 @@
 import logging
-import os
-import subprocess
 
+from azul.deployment import (
+    terraform,
+)
 from azul.logging import (
     configure_script_logging,
 )
@@ -29,17 +30,19 @@ renamed = {
     'null_resource.hmac-secret': 'null_resource.hmac_secret'
 }
 
-
-def terraform_state(*args):
-    return subprocess.run(['terraform', 'state', *args],
-                          cwd=os.path.join(os.environ['project_root'], 'terraform'),
-                          check=True,
-                          capture_output=True,
-                          shell=False)
+rename_chalice = [
+    'module.chalice_service.aws_cloudwatch_event_rule.indexercachehealth-event',
+    'module.chalice_service.aws_cloudwatch_event_target.indexercachehealth-event',
+    'module.chalice_service.aws_lambda_permission.indexercachehealth-event',
+    'module.chalice_service.aws_cloudwatch_event_rule.servicecachehealth-event',
+    'module.chalice_service.aws_cloudwatch_event_target.servicecachehealth-event',
+    'module.chalice_service.aws_lambda_permission.servicecachehealth-event'
+]
+renamed.update({name: name.split('-')[0] for name in rename_chalice})
 
 
 def main():
-    current_names = terraform_state('list').stdout.decode().splitlines()
+    current_names = terraform.run('state', 'list').splitlines()
     for current_name in current_names:
         try:
             new_name = renamed[current_name]
@@ -48,7 +51,7 @@ def main():
                 log.info('Found %r, already renamed', current_name)
         else:
             log.info('Found %r, renaming to %r', current_name, new_name)
-            terraform_state('mv', current_name, new_name)
+            terraform.run('state', 'mv', current_name, new_name)
 
 
 if __name__ == '__main__':
