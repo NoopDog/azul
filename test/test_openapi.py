@@ -1,3 +1,14 @@
+from furl import (
+    furl,
+)
+from jsonschema import (
+    Draft4Validator,
+)
+from openapi_spec_validator import (
+    validate_spec,
+)
+import requests
+
 from azul.chalice import (
     AzulChaliceApp,
 )
@@ -7,6 +18,9 @@ from azul.openapi import (
 )
 from azul_test_case import (
     AzulUnitTestCase,
+)
+from service import (
+    WebServiceTestCase,
 )
 
 
@@ -231,3 +245,13 @@ class TestSchemaHelpers(AzulUnitTestCase):
             self.assertIn(schema.optional, e.args)
         else:
             self.fail()
+
+
+class ServiceSpecValidation(WebServiceTestCase):
+
+    def test_validate_spec(self):
+        response = requests.get(url=furl(url=self.base_url, path='openapi').url)
+        response.raise_for_status()
+        spec = response.json()
+        validate_spec(spec)
+        Draft4Validator.check_schema(spec)

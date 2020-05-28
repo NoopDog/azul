@@ -15,7 +15,6 @@ from azul.logging import (
     configure_test_logging,
 )
 from azul.modules import (
-    load_app_module,
     load_module,
 )
 import azul.objects
@@ -76,7 +75,6 @@ def load_tests(_loader, tests, _ignore):
         azul.uuids,
         azul.vendored.frozendict,
         retorts,
-        load_app_module('service'),
         load_module(root + '/scripts/envhook.py', 'envhook'),
         load_module(root + '/scripts/export_environment.py', 'export_environment'),
         load_module(root + '/scripts/check_branch.py', 'check_branch'),

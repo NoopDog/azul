@@ -16,13 +16,13 @@ googleapis-common-protos==1.52.0
 idna==2.8
 jinja2==2.11.2
 jsonpointer==1.14
-jsonschema==3.2.0
 markupsafe==1.1.1
 oauthlib==3.1.0
 orderedmultidict==1.0.1
 protobuf==3.14.0
 puremagic==1.4
 pycparser==2.20
+pyrsistent==0.17.3
 python-dateutil==2.8.1
 pytz==2020.4
 requests-oauthlib==1.3.0
