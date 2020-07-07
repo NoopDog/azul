@@ -47,6 +47,7 @@ from zipfile import (
 
 import attr
 import chalice.cli
+import fastavro
 from furl import (
     furl,
 )
@@ -283,7 +284,8 @@ class IndexingIntegrationTest(IntegrationTestCase, AlwaysTearDownTestCase):
             (None, self._check_manifest, 1),
             ('compact', self._check_manifest, 1),
             ('full', self._check_manifest, 3),
-            ('terra.bdbag', self._check_terra_bdbag, 1)
+            ('terra.bdbag', self._check_terra_bdbag, 1),
+            ('terra.pfb', self._check_terra_pfb, 1)
         ]:
             with self.subTest('manifest',
                               catalog=catalog,
@@ -398,6 +400,13 @@ class IndexingIntegrationTest(IntegrationTestCase, AlwaysTearDownTestCase):
                 break
         self.assertEqual(200, response.status, response.data)
         self.assertEqual(size, int(response.headers['Content-Length']))
+
+    def _check_terra_pfb(self, response: bytes):
+        reader = fastavro.reader(BytesIO(response))
+        for record in reader:
+            fastavro.validate(record, reader.writer_schema)
+            if record['name'] == 'files':
+                self.assertEqual(len(record['object']), 17)
 
     def __check_manifest(self, file: IO[bytes], uuid_field_name: str) -> List[Mapping[str, str]]:
         text = TextIOWrapper(file)

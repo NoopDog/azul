@@ -41,6 +41,7 @@ from zipfile import (
     ZipFile,
 )
 
+import fastavro
 from furl import (
     furl,
 )
@@ -169,6 +170,25 @@ class TestManifestEndpoints(ManifestTestCase):
         with mock.patch('azul.service.manifest_service.ManifestService._can_use_cached_manifest') as m:
             m.return_value = False
             return super().run(result)
+
+    @manifest_test
+    def test_pfb_manifest(self):
+        self.maxDiff = None
+        bundle_fqid = BundleFQID('587d74b4-1075-4bbf-b96a-4d1ede0481b2', '2018-10-10T022343.182000Z')
+        self._index_canned_bundle(bundle_fqid)
+        for debug in (False, True):
+            with self.subTest(debug=debug):
+                with mock.patch.object(type(config), 'debug', debug):
+                    response = self._get_manifest(ManifestFormat.terra_pfb, {})
+                    self.assertEqual(200, response.status_code)
+                    pfb_file = BytesIO(response.content)
+                    reader = fastavro.reader(pfb_file)
+                    for record in reader:
+                        fastavro.validate(record, reader.writer_schema)
+                        object_schema = one(f for f in reader.writer_schema['fields'] if f['name'] == 'object')
+                        entity_schema = one(e for e in object_schema['type'] if e['name'] == record['name'])
+                        fields = entity_schema['fields']
+                        self.assertEqual(set(record['object'].keys()), set(f['name'] for f in fields))
 
     @manifest_test
     def test_manifest_not_cached(self):
