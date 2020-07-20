@@ -82,14 +82,17 @@ class StorageService:
         self.client.upload_file(Filename=file_path,
                                 Bucket=self.bucket_name,
                                 Key=object_key,
-                                ExtraArgs=self._object_creation_kwargs(content_type, tagging))
+                                ExtraArgs=self._object_creation_kwargs(content_type, tagging, extra_args=True))
 
-    def _object_creation_kwargs(self, content_type, tagging):
+    def _object_creation_kwargs(self, content_type, tagging, extra_args=False):
         kwargs = {}
         if content_type is not None:
             kwargs['ContentType'] = content_type
         if tagging is not None:
-            kwargs['Tagging'] = urlencode(tagging)
+            if extra_args:
+                kwargs['Metadata'] = tagging
+            else:
+                kwargs['Tagging'] = urlencode(tagging)
         return kwargs
 
     def get_presigned_url(self, key: str, file_name: Optional[str] = None) -> str:
