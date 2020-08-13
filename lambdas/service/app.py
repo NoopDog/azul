@@ -953,9 +953,11 @@ filters_param_spec = params.query(
                 'oneOf': [
                     schema.object(is_=schema.array({})),
                     *(
-                        schema.object_type({
-                            op: schema.array({}, minItems=2, maxItems=2)
-                        })
+                        schema.object_type(
+                            properties={
+                                op: schema.array({}, minItems=2, maxItems=2)
+                            }
+                        )
                         for op in ['contains', 'within', 'intersects']
                     )
                 ]

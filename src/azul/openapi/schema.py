@@ -45,7 +45,7 @@ class optional(NamedTuple):
 
 
 # noinspection PyShadowingBuiltins
-def object(additional_properties=False, **props: Union[TYPE, optional]):
+def object(additional_properties=False, **props: Union[TYPE, optional]) -> JSON:
     """
     >>> from azul.doctests import assert_json
     >>> assert_json(object(x=int, y=int, relative=optional(bool)))
@@ -64,11 +64,11 @@ def object(additional_properties=False, **props: Union[TYPE, optional]):
                 "type": "boolean"
             }
         },
+        "additionalProperties": false,
         "required": [
             "x",
             "y"
-        ],
-        "additionalProperties": false
+        ]
     }
 
     >>> assert_json(object())
@@ -112,7 +112,7 @@ def properties(**props: TYPE):
     return {name: make_type(prop) for name, prop in props.items()}
 
 
-def array(item: TYPE, *items: TYPE, **kwargs):
+def array(item: TYPE, *items: TYPE, **kwargs) -> JSON:
     """
     Returns the schema for an array of items of a given type, or a sequence of
     types.
@@ -210,7 +210,7 @@ def enum(*items: PrimitiveJSON, type_: TYPE = None) -> JSON:
     }
 
 
-def pattern(regex: Union[str, re.Pattern], _type: TYPE = str):
+def pattern(regex: Union[str, re.Pattern], _type: TYPE = str) -> JSON:
     """
     Returns schema for a JSON string matching the given pattern.
 
@@ -338,7 +338,7 @@ _primitive_types: Mapping[Optional[type], JSON] = {
 }
 
 
-def object_type(properties: JSON, **kwargs) -> JSON:
+def object_type(properties: JSON, additional_properties=False, **kwargs) -> JSON:
     """
     Returns the schema for a JSON object with the given properties.
 
@@ -351,6 +351,7 @@ def object_type(properties: JSON, **kwargs) -> JSON:
                 "type": "string"
             }
         },
+        "additionalProperties": false,
         "required": [
             "x"
         ]
@@ -359,6 +360,7 @@ def object_type(properties: JSON, **kwargs) -> JSON:
     return {
         'type': 'object',
         'properties': properties,
+        'additionalProperties': additional_properties,
         **kwargs
     }
 
