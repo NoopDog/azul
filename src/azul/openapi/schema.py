@@ -233,12 +233,13 @@ def enum(*items_: PrimitiveJSON, items: List[str] = None, type_: TYPE = None) ->
 
 def pattern(regex: Union[str, re.Pattern], _type: TYPE = str) -> JSON:
     """
-    Returns schema for a JSON string matching the given pattern.
+    Returns schema for a JSON string fully matching the given pattern.
 
     :param regex: An `re.Pattern` instance or a string containing the regular
                   expression that documents need to match in order to be valid.
                   If an `re.Pattern` instance is passed it should not use any
-                  Python-specific regex features.
+                  Python-specific regex features. Ensure that regular expression
+                  passed does not start with `^` or end with `$`.
 
     :param _type: An optional schema to override the default of `string`. Note
                   that as of version 7.0 of JSON Schema, the `pattern` property
@@ -249,22 +250,23 @@ def pattern(regex: Union[str, re.Pattern], _type: TYPE = str) -> JSON:
     >>> assert_json(pattern(r'[a-z]+'))
     {
         "type": "string",
-        "pattern": "[a-z]+"
+        "pattern": "^([a-z]+)$"
     }
 
     >>> assert_json(pattern(re.compile(r'[a-z]+'), _type={'type': 'string', 'length': 3}))
     {
         "type": "string",
         "length": 3,
-        "pattern": "[a-z]+"
+        "pattern": "^([a-z]+)$"
     }
     """
     if isinstance(regex, re.Pattern):
         regex = regex.pattern
     assert isinstance(regex, str)
+    assert not regex.startswith('^') and not regex.endswith('$')
     return {
         **make_type(_type),
-        'pattern': regex
+        'pattern': f'^({regex})$'
     }
 
 
