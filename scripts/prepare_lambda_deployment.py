@@ -9,7 +9,11 @@ from pathlib import (
 import re
 import shutil
 import sys
-import typing
+from typing import (
+    Mapping,
+    Sequence,
+    TypeVar,
+)
 
 from azul import (
     config,
@@ -30,8 +34,8 @@ from azul.types import (
 )
 
 log = logging.getLogger(__name__)
-T = typing.TypeVar('T', *PrimitiveJSON.__args__)  # noqa
-U = typing.TypeVar('U', *AnyJSON.__args__)  # noqa
+T = TypeVar('T', bound=PrimitiveJSON)
+U = TypeVar('U', bound=AnyJSON)
 
 
 def transform_tf(input_json):
@@ -143,9 +147,9 @@ def patch_resource_names(tf_config: JSON) -> JSON:
             return value
 
     def _patch_refs(block: U) -> U:
-        assert not isinstance(block, typing.Sequence)
+        assert not isinstance(block, Sequence)
         return {
-            k: _patch_refs(v) if isinstance(v, typing.Mapping) else _replace_refs(v)
+            k: _patch_refs(v) if isinstance(v, Mapping) else _replace_refs(v)
             for k, v in block.items()
         }
 
