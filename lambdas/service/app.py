@@ -1569,7 +1569,7 @@ file_fqid_parameters_spec = [
 
 @app.route('/dss/files/{file_uuid}', methods=['GET'], cors=True)
 def dss_files(file_uuid: str) -> Response:
-    return repository_files(file_uuid)
+    return repository_files_worker(file_uuid)
 
 
 # FIXME: remove /fetch/dss/files endpoint
@@ -1577,7 +1577,7 @@ def dss_files(file_uuid: str) -> Response:
 
 @app.route('/fetch/dss/files/{file_uuid}', methods=['GET'], cors=True)
 def fetch_dss_files(file_uuid: str) -> Response:
-    return fetch_repository_files(file_uuid)
+    return fetch_repository_files_worker(file_uuid)
 
 
 repository_files_spec = {
@@ -1690,6 +1690,10 @@ repository_files_spec = {
     }
 })
 def repository_files(file_uuid: str) -> Response:
+    return repository_files_worker(file_uuid)
+
+
+def repository_files_worker(file_uuid: str) -> Response:
     result = _repository_files(file_uuid, fetch=False)
     status_code = result.pop('Status')
     return Response(body='',
@@ -1723,6 +1727,10 @@ def repository_files(file_uuid: str) -> Response:
     }
 })
 def fetch_repository_files(file_uuid: str) -> Response:
+    return fetch_repository_files_worker(file_uuid)
+
+
+def fetch_repository_files_worker(file_uuid: str) -> Response:
     body = _repository_files(file_uuid, fetch=True)
     return Response(body=json.dumps(body), status_code=200)
 
