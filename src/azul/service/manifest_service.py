@@ -867,6 +867,16 @@ class PFBManifestGenerator(FileBasedManifestGenerator):
         """
         return []
 
+    def _all_docs(self) -> Iterable[JSON]:
+        for hit in self._create_request().scan():
+            doc = self._hit_to_doc(hit)
+            yield doc
+            file_ = one(doc['contents']['files'])
+            for related in file_['related_files']:
+                related_doc = copy_json(doc)
+                related_doc['contents']['files'] = [{**file_, **related}]
+                yield related_doc
+
     def create_file(self) -> Tuple[str, Optional[str]]:
         fd, path = mkstemp()
 
@@ -875,8 +885,7 @@ class PFBManifestGenerator(FileBasedManifestGenerator):
         json_schema = pfb.pfb_schema(pfb.tables_schema(field_types))
 
         aggregator = pfb.EntityAggregator()
-        for hit in self._create_request().scan():
-            doc = self._hit_to_doc(hit)
+        for doc in self._all_docs():
             aggregator.add_doc(doc)
 
         entities = itertools.chain([entity], aggregator.entities(json_schema))
