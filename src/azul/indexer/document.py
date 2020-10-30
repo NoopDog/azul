@@ -210,6 +210,7 @@ T = TypeVar('T', bound=AnyJSON)
 class FieldType(Generic[N, T], metaclass=ABCMeta):
     shadowed: bool = False
     es_sort_mode: str = 'min'
+    es_type: Optional[str] = None
 
     @abstractmethod
     def to_index(self, value: N) -> T:
@@ -221,6 +222,7 @@ class FieldType(Generic[N, T], metaclass=ABCMeta):
 
 
 class PassThrough(Generic[T], FieldType[T, T]):
+    es_type = 'string'
 
     def to_index(self, value: T) -> T:
         return value
@@ -229,9 +231,21 @@ class PassThrough(Generic[T], FieldType[T, T]):
         return value
 
 
-pass_thru_str: PassThrough[str] = PassThrough()
-pass_thru_int: PassThrough[int] = PassThrough()
-pass_thru_bool: PassThrough[bool] = PassThrough()
+class PassThroughInt(PassThrough):
+    es_type = 'long'
+
+
+class PassThroughString(PassThrough):
+    es_type = 'string'
+
+
+class PassThroughBool(PassThrough):
+    es_type = 'boolean'
+
+
+pass_thru_str: PassThrough[str] = PassThroughString()
+pass_thru_int: PassThrough[int] = PassThroughInt()
+pass_thru_bool: PassThrough[bool] = PassThroughBool()
 pass_thru_json: PassThrough[JSON] = PassThrough()
 
 
@@ -239,6 +253,7 @@ class NullableString(FieldType[Optional[str], str]):
     # Note that the replacement values for `None` used for each data type
     # ensure that `None` values are placed at the end of a sorted list.
     null_string = '~null'
+    es_type = 'string'
 
     def to_index(self, value: Optional[str]) -> str:
         return self.null_string if value is None else value
@@ -260,6 +275,7 @@ class NullableNumber(Generic[N_], FieldType[Optional[N_], Number]):
     # floating point number. This prevents loss when converting between the two.
     null_int = sys.maxsize - 1023
     assert null_int == int(float(null_int))
+    es_type = 'long'
 
     def to_index(self, value: Optional[N_]) -> Number:
         return self.null_int if value is None else value
@@ -284,6 +300,7 @@ null_float_sum_sort: SumSortedNullableNumber[float] = SumSortedNullableNumber()
 
 class NullableBool(NullableNumber[bool]):
     shadowed = False
+    es_type = 'boolean'
 
     def to_index(self, value: Optional[bool]) -> Number:
         value = {False: 0, True: 1, None: None}[value]

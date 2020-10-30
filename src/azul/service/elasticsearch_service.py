@@ -374,6 +374,7 @@ class ElasticsearchService(DocumentService, AbstractService):
 
         field_type = self.field_type(catalog, tuple(pagination['sort'].split('.')))
         sort_mode = field_type.es_sort_mode
+        es_type = field_type.es_type
 
         def sort_values(sort_order_):
             assert sort_order_ in ('asc', 'desc'), sort_order_
@@ -382,7 +383,8 @@ class ElasticsearchService(DocumentService, AbstractService):
                     sort_field: {
                         'order': sort_order_,
                         'mode': sort_mode,
-                        'missing': '_last' if sort_order_ == 'asc' else '_first'
+                        'missing': '_last' if sort_order_ == 'asc' else '_first',
+                        **({'unmapped_type': es_type} if es_type is not None else {})
                     }
                 },
                 {

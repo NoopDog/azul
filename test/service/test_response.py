@@ -2060,8 +2060,8 @@ class TestUnpopulatedIndexResponse(WebServiceTestCase):
     def test_empty_response(self):
         for entity_type in self.entity_types:
             with self.subTest(entity_type=entity_type):
-                url = furl(url=self.base_url, path=f'/index/{entity_type}')
-                response = requests.get(url.url)
+                response = requests.get(url=furl(url=self.base_url,
+                                                 path=f'/index/{entity_type}').url)
                 response.raise_for_status()
                 response = response.json()
                 self.assertEqual([], response['hits'])
@@ -2075,8 +2075,9 @@ class TestUnpopulatedIndexResponse(WebServiceTestCase):
     def test_sorted_responses(self):
         for entity, facet in product(self.entity_types, self.app_module.app.facets):
             with self.subTest(entity=entity, facet=facet):
-                url = furl(url=self.base_url, path=f'/index/{entity}')
-                response = requests.get(url.url, params={'sort': facet})
+                response = requests.get(url=furl(url=self.base_url,
+                                                 path=f'/index/{entity}').url,
+                                        params={'sort': facet})
                 response.raise_for_status()
                 self.assertIs(200, response.status_code)
 

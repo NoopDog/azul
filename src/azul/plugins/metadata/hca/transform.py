@@ -90,6 +90,7 @@ pass_thru_uuid4: PassThrough[api.UUID4] = PassThrough()
 
 
 class ValueAndUnit(FieldType[JSON, str]):
+    es_type = 'string'
 
     def to_index(self, value_unit: Optional[JSON]) -> str:
         """
