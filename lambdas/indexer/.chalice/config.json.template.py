@@ -1,12 +1,17 @@
 from azul import (
     config,
 )
+from azul.modules import (
+    load_app_module,
+)
 from azul.template import (
     emit,
 )
 
 suffix = '-' + config.deployment_stage
 assert config.indexer_name.endswith(suffix)
+
+indexer = load_app_module('indexer')
 
 emit({
     "version": "2.0",
@@ -20,20 +25,17 @@ emit({
     "stages": {
         config.deployment_stage: {
             "lambda_functions": {
-                # FIXME: Brittle coupling between the string literal below and
-                #        the handler function name in app.py
-                #        https://github.com/DataBiosphere/azul/issues/1848
-                "contribute": {
+                config.lambda_basename(indexer.contribute): {
                     "reserved_concurrency": config.indexer_concurrency,
                     "lambda_memory_size": 256,
                     "lambda_timeout": config.contribution_lambda_timeout,
                 },
-                "aggregate": {
+                config.lambda_basename(indexer.aggregate): {
                     "reserved_concurrency": config.indexer_concurrency,
                     "lambda_memory_size": 256,
                     "lambda_timeout": config.aggregation_lambda_timeout(retry=False)
                 },
-                "aggregate_retry": {
+                config.lambda_basename(indexer.aggregate_retry): {
                     "reserved_concurrency": config.indexer_concurrency,
                     "lambda_memory_size": 3008,
                     "lambda_timeout": config.aggregation_lambda_timeout(retry=True)

@@ -630,6 +630,9 @@ class Config:
     service_cache_health_lambda_basename = 'servicecachehealth'
     indexer_cache_health_lambda_basename = 'indexercachehealth'
 
+    def lambda_basename(self, app_route):
+        return app_route.func.__name__
+
     @property
     def indexer_concurrency(self):
         return int(os.environ['AZUL_INDEXER_CONCURRENCY'])
