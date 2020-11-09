@@ -679,7 +679,7 @@ class Config:
 
     @property
     def manifest_state_machine_name(self):
-        return config.qualified_resource_name('manifest')
+        return config.qualified_resource_name(self.manifest_lambda_basename)
 
     url_shortener_whitelist = [
         r'([^.]+\.)*humancellatlas\.org',
