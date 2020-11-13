@@ -1,3 +1,6 @@
+from itertools import (
+    product,
+)
 import json
 from typing import (
     Any,
@@ -11,6 +14,9 @@ from unittest import (
 )
 import urllib.parse
 
+from furl import (
+    furl,
+)
 from more_itertools import (
     one,
 )
@@ -2049,14 +2055,30 @@ class TestUnpopulatedIndexResponse(WebServiceTestCase):
         cls._teardown_indices()
         super().tearDownClass()
 
+    entity_types = ['files', 'projects', 'samples', 'bundles']
+
     def test_empty_response(self):
-        url = self.base_url + "/index/projects"
-        response = requests.get(url)
-        response.raise_for_status()
-        response = response.json()
-        self.assertEqual([], response['hits'])
-        self.assertEqual({None}, set(response['pagination'].values()))
-        self.assertEqual({}, response['termFacets'])
+        for entity_type in self.entity_types:
+            with self.subTest(entity_type=entity_type):
+                url = furl(url=self.base_url, path=f'/index/{entity_type}')
+                response = requests.get(url.url)
+                response.raise_for_status()
+                response = response.json()
+                self.assertEqual([], response['hits'])
+                self.assertEqual(0, response['pagination']['count'])
+                self.assertEqual(0, response['pagination']['total'])
+                self.assertTrue(response['termFacets'])
+                for value in response['termFacets'].values():
+                    self.assertEqual([], value['terms'])
+                    self.assertEqual(0, value['total'])
+
+    def test_sorted_responses(self):
+        for entity, facet in product(self.entity_types, self.app_module.app.facets):
+            with self.subTest(entity=entity, facet=facet):
+                url = furl(url=self.base_url, path=f'/index/{entity}')
+                response = requests.get(url.url, params={'sort': facet})
+                response.raise_for_status()
+                self.assertIs(200, response.status_code)
 
 
 class TestPortalIntegrationResponse(LocalAppTestCase):
