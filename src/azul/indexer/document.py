@@ -210,7 +210,11 @@ T = TypeVar('T', bound=AnyJSON)
 class FieldType(Generic[N, T], metaclass=ABCMeta):
     shadowed: bool = False
     es_sort_mode: str = 'min'
-    es_type: Optional[str] = None
+
+    @property
+    @abstractmethod
+    def es_type(self) -> str:
+        return ''
 
     @abstractmethod
     def to_index(self, value: N) -> T:
@@ -222,7 +226,11 @@ class FieldType(Generic[N, T], metaclass=ABCMeta):
 
 
 class PassThrough(Generic[T], FieldType[T, T]):
-    es_type = 'string'
+
+    @property
+    @abstractmethod
+    def es_type(self) -> str:
+        return ''
 
     def to_index(self, value: T) -> T:
         return value
@@ -243,10 +251,14 @@ class PassThroughBool(PassThrough):
     es_type = 'boolean'
 
 
+class PassThroughJSON(PassThrough):
+    es_type = 'string'
+
+
 pass_thru_str: PassThrough[str] = PassThroughString()
 pass_thru_int: PassThrough[int] = PassThroughInt()
 pass_thru_bool: PassThrough[bool] = PassThroughBool()
-pass_thru_json: PassThrough[JSON] = PassThrough()
+pass_thru_json: PassThrough[JSON] = PassThroughJSON()
 
 
 class NullableString(FieldType[Optional[str], str]):

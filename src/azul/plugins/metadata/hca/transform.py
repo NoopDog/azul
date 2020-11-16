@@ -49,6 +49,7 @@ from azul.indexer.document import (
     FieldTypes,
     NullableString,
     PassThrough,
+    PassThroughString,
     null_bool,
     null_int,
     null_str,
@@ -86,7 +87,7 @@ Sample = Union[api.CellLine, api.Organoid, api.SpecimenFromOrganism]
 sample_types = api.CellLine, api.Organoid, api.SpecimenFromOrganism
 assert Sample.__args__ == sample_types  # since we can't use * in generic types
 
-pass_thru_uuid4: PassThrough[api.UUID4] = PassThrough()
+pass_thru_uuid4: PassThrough[api.UUID4] = PassThroughString()
 
 
 class ValueAndUnit(FieldType[JSON, str]):

@@ -7,6 +7,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Sequence,
 )
 import unittest
 from unittest import (
@@ -2049,37 +2050,42 @@ class TestUnpopulatedIndexResponse(WebServiceTestCase):
     def setUpClass(cls):
         super().setUpClass()
         cls._setup_indices()
+        cls.maxDiff = None
 
     @classmethod
     def tearDownClass(cls):
         cls._teardown_indices()
         super().tearDownClass()
 
+    def facets(self) -> Sequence[str]:
+        return self.app_module.app.facets
+
     entity_types = ['files', 'projects', 'samples', 'bundles']
 
     def test_empty_response(self):
+        empty_term_facets = {
+            facet: {'terms': [], 'total': 0, 'type': 'terms'} for facet in self.facets()
+        }
         for entity_type in self.entity_types:
             with self.subTest(entity_type=entity_type):
                 response = requests.get(url=furl(url=self.base_url,
-                                                 path=f'/index/{entity_type}').url)
+                                                 path=('index', entity_type)).url)
                 response.raise_for_status()
                 response = response.json()
                 self.assertEqual([], response['hits'])
                 self.assertEqual(0, response['pagination']['count'])
                 self.assertEqual(0, response['pagination']['total'])
                 self.assertTrue(response['termFacets'])
-                for value in response['termFacets'].values():
-                    self.assertEqual([], value['terms'])
-                    self.assertEqual(0, value['total'])
+                for facet, body in response['termFacets'].items():
+                    self.assertEqual(empty_term_facets[facet], body)
 
     def test_sorted_responses(self):
-        for entity, facet in product(self.entity_types, self.app_module.app.facets):
-            with self.subTest(entity=entity, facet=facet):
+        for entity_type, facet in product(self.entity_types, self.facets()):
+            with self.subTest(entity=entity_type, facet=facet):
                 response = requests.get(url=furl(url=self.base_url,
-                                                 path=f'/index/{entity}').url,
+                                                 path=('index', entity_type)).url,
                                         params={'sort': facet})
                 response.raise_for_status()
-                self.assertIs(200, response.status_code)
 
 
 class TestPortalIntegrationResponse(LocalAppTestCase):
