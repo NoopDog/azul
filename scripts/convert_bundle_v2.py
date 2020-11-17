@@ -164,7 +164,7 @@ def dss_bundle_to_tdr(bundle: Bundle, source: TDRSource, source_uuid: str) -> TD
             entry['sha256'] = ''
         else:
             # Generate random DRS ID
-            entry['drs_path'] = drs_path(source_uuid, entry['uuid'])
+            entry['drs_path'] = drs_path(source_uuid, random_uuid())
 
     assert links_entry is not None
     # links.json has no FQID of its own in TDR since its FQID is used
@@ -269,7 +269,7 @@ def add_supp_files(bundle: TDRBundle, source_uuid: str, *, num_files: int) -> TD
     for i in range(num_files):
         metadata_id = random_uuid()
         data_id = random_uuid()
-        drs_id = data_id
+        drs_id = random_uuid()
         document_name = f'supplementary_file_{i}.json'
         file_name = f'{metadata_id}_file_name.fmt'
         version = datetime.now().strftime(tdr.Plugin.timestamp_format)
