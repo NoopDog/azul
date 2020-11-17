@@ -58,6 +58,9 @@ class Bundle(ABC):
     def fquid(self):
         return BundleFQID(self.uuid, self.version)
 
+    def concrete_entity_type(self, entity_key):
+        return self.metadata_files[entity_key]['describedBy'].rsplit('/', 1)[1]
+
     @abstractmethod
     def drs_path(self, manifest_entry: JSON) -> Optional[str]:
         """
