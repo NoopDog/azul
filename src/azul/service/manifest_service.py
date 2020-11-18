@@ -5,6 +5,9 @@ from abc import (
 from collections import (
     defaultdict,
 )
+from concurrent.futures.thread import (
+    ThreadPoolExecutor,
+)
 from copy import (
     deepcopy,
 )
@@ -42,6 +45,7 @@ from typing import (
     Mapping,
     MutableMapping,
     Optional,
+    Set,
     Tuple,
     cast,
 )
@@ -52,7 +56,11 @@ import attr
 from bdbag import (
     bdbag_api,
 )
+from elasticsearch import (
+    ConnectionTimeout,
+)
 from elasticsearch_dsl import (
+    Q,
     Search,
 )
 from elasticsearch_dsl.response import (
@@ -815,14 +823,43 @@ class FullManifestGenerator(StreamingManifestGenerator):
                               combine_script='return new ArrayList(params._agg.fields)',
                               reduce_script=reduce_script)
         es_search = es_search.extra(size=0)
-        response = es_search.execute()
-        assert len(response.hits) == 0
+        start = time.time()
+        try:
+            response = es_search.execute()
+        # If timeout is exceeded the request is partitioned to reduce load on ES
+        except ConnectionTimeout:
+            logger.warning('Elasticsearch request exceeded timeout limit, retrying …')
+            fields = self._partition_search(es_search)
+        else:
+            logger.info('Elasticsearch request completed after %.003fs',
+                        time.time() - start)
+            assert len(response.hits) == 0
+            fields = response.aggregations.fields.value
         return {
             'contents': {
                 value: value.split('.')[-1]
-                for value in sorted(response.aggregations.fields.value)
+                for value in sorted(fields)
             }
         }
+
+    def _partition_search(self, es_search: Search) -> Set[str]:
+
+        def get_fields(es_search: Search) -> List[str]:
+            response = es_search.execute()
+            assert len(response.hits) == 0, response.hits
+            return response.aggregations.fields.value
+
+        requests = []
+        for prefix in list('0123456789abcdef'):
+            query = Q('bool', must=Q('prefix', **{'bundles.uuid.keyword': prefix}))
+            requests.append(es_search.query(query))
+        logger.info('Sending asynchronous requests to Elasticsearch')
+        start = time.time()
+        with ThreadPoolExecutor(max_workers=len(requests)) as tpe:
+            fields = list(tpe.map(get_fields, requests))
+        logger.info('Elasticsearch asynchronous requests completed after %.003fs',
+                    time.time() - start)
+        return set(chain(*fields))
 
 
 FQID = Tuple[str, str]
