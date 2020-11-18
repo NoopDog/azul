@@ -141,7 +141,8 @@ class HealthCheckTestCase(LocalAppTestCase, ElasticsearchTestCase, metaclass=ABC
         with ResponsesHelper() as helper:
             helper.add_passthru(self.base_url)
             with self._mock_service_endpoints(helper, endpoint_states):
-                app.update_health_cache(MagicMock(), MagicMock())
+                cache_updater = getattr(app, self.lambda_name() + 'cachehealth')
+                cache_updater(MagicMock(), MagicMock())
                 response = requests.get(self.base_url + '/health/cached')
                 self.assertEqual(200, response.status_code)
 

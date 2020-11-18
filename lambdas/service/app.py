@@ -602,8 +602,8 @@ def custom_health(keys: Optional[str] = None):
     return app.health_controller.custom_health(keys)
 
 
-@app.schedule('rate(1 minute)', name=config.service_cache_health_lambda_basename)
-def update_health_cache(_event: chalice.app.CloudWatchEvent):
+@app.schedule('rate(1 minute)')
+def servicecachehealth(_event: chalice.app.CloudWatchEvent):
     app.health_controller.update_cache()
 
 

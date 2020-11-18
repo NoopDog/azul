@@ -627,9 +627,6 @@ class Config:
     def subscribe_to_dss(self):
         return self._boolean(os.environ['AZUL_SUBSCRIBE_TO_DSS'])
 
-    service_cache_health_lambda_basename = 'servicecachehealth'
-    indexer_cache_health_lambda_basename = 'indexercachehealth'
-
     def lambda_basename(self, app_route):
         return app_route.func.__name__
 
