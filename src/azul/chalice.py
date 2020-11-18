@@ -295,7 +295,7 @@ class RouteSpec:
         # OpenAPI requires HTTP method names be lower case
         http_method = current_request.method.lower()
         spec_parameters = self.get_spec_validators(http_method)
-        mandatory_params = {name for name, spec in spec_parameters.items() if spec.required}
+        mandatory_params = {name for name, spec in spec_parameters.items() if spec.required and spec.default is None}
 
         current_request.query_params = current_request.query_params or {}
         current_request.uri_params = current_request.uri_params or {}
@@ -332,6 +332,15 @@ class RouteSpec:
             return Response(body=json.dumps(invalid_body),
                             status_code=400,
                             headers={'Content-Type': 'application/problem+json'})
+
+        for params, kind in ((current_request.query_params, 'query'),
+                             (current_request.uri_params, 'path')):
+            params.update({
+                name: spec_parameters[name].default for name, spec in spec_parameters.items()
+                if (name not in all_provided_params
+                    and spec.in_ == kind
+                    and spec.default is not None)
+            })
 
     def to_dict(self):
         return dict({spec: self.get_method_spec(spec) for spec in self.specs},

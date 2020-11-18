@@ -421,3 +421,48 @@ class RequestParameterValidationTest(WebServiceTestCase):
         url = furl(url=self.base_url, path='/fetch/repository/files/').url
         response = requests.get(url, params={'replica': 'aws'})
         self.assertEqual(400, response.status_code)
+
+    def test_default_for_missing_params(self):
+        path = '/test/mock/endpoints'
+        method_spec = {
+            'parameters': [
+                {
+                    'in': 'query',
+                    'schema': {
+                        'type': 'string',
+                        'pattern': '^([a-z0-9]{1,64})$',
+                        'enum': [self.catalog],
+                        **({} if default is None else {'default': default})
+                    },
+                    'required': required,
+                    'name': f'required-{required}-default-{default}'
+                } for required in (True, False) for default in (self.catalog, None)
+            ],
+            'responses': {
+                '200': {
+                    'description': 'OK'
+                }
+            }
+        }
+
+        @self.app_module.app.route(path,
+                                   validate=True,
+                                   path_spec=None,
+                                   method_spec=method_spec,
+                                   methods=['GET'])
+        def test_method():
+            return dict(self.app_module.app.current_request.query_params)
+
+        url = furl(url=self.base_url, path=path).url
+        response = requests.get(url=url)
+        self.assertEqual(400, response.status_code, response.json())
+        self.assertEqual('required-True-default-None',
+                         one(response.json()['missing_parameters'])['name'])
+        response = requests.get(url=url,
+                                params={'required-True-default-None': self.catalog})
+        response.raise_for_status()
+        self.assertEqual({
+            'required-True-default-None': 'test',
+            'required-True-default-test': 'test',
+            'required-False-default-test': 'test'
+        }, response.json())

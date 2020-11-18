@@ -53,6 +53,7 @@ class SpecValidator:
                  *,
                  name: str,
                  required: bool,
+                 default: str = None,
                  schema: Mapping[str, str] = None,
                  content: Mapping[str, str] = None,
                  pattern: Optional[str] = None,
@@ -68,6 +69,7 @@ class SpecValidator:
         self.required = required
         self.pattern = pattern
         self.validator = validator
+        self.default = default
         self.schema = schema
         self.content = content
 
@@ -87,6 +89,7 @@ class SchemaSpecValidator(SpecValidator):
         reject('content' in kwargs)
         super().__init__(name=name,
                          required=required,
+                         default=schema.get('default'),
                          schema=schema,
                          pattern=pattern,
                          validator=type_lookup(schema['type']),
@@ -148,6 +151,7 @@ class ContentSpecValidator(SpecValidator):
         reject('schema' in kwargs)
         super().__init__(name=name,
                          required=required,
+                         default=content['application/json']['schema']['default'],
                          content=content,
                          pattern=pattern,
                          validator=type_lookup(content['application/json']['schema']['type']),
