@@ -364,9 +364,6 @@ class Terraform:
     def tracked_schema(self) -> JSON:
         return self._tracked_schema_json()['schema']
 
-    def check_tracked_versions(self, versions: str) -> bool:
-        return versions == self.tracked_versions
-
 
 terraform = Terraform()
 

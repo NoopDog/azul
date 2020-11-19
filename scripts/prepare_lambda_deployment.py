@@ -134,15 +134,13 @@ def patch_resource_names(tf_config: JSON) -> JSON:
     """
 
     def _patch_name(resource_name: str) -> str:
-        if resource_name.endswith('-event'):
-            return resource_name[:-len('-event')]
-        else:
-            return resource_name
+        return re.sub(r'(?!\w+\.)?(\w+)(?:-event)(?=\.\w+)?', r'\1', resource_name)
 
     def _replace_refs(value: T) -> T:
         if isinstance(value, str):
-            pattern = re.compile(r'\${(\w+\.\w+)(?:-event)(\.\w+)}')
-            return pattern.sub(r'${\1\2}', value)
+            return re.sub(r'(?!\${)((\w|-|\.)+)(?=})',
+                          lambda m: _patch_name(m.group(1)),
+                          value)
         else:
             return value
 

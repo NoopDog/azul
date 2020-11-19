@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 
 
 def check_schema_json() -> None:
-    if terraform.check_tracked_versions(terraform.versions()):
+    if terraform.tracked_versions == terraform.versions():
         return
     else:
         raise RuntimeError('Tracked Terraform schema is out of date. Run `make -C '
