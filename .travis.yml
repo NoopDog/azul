@@ -25,7 +25,7 @@ branches:
   #
   # https://github.com/travis-ci/travis-ci/issues/1147
   only:
-    - develop
+    - issues/danielsotirhos/2417-fix-stratification-terminology-in-cgm-adapter
     - integration
     - staging
     - prod
