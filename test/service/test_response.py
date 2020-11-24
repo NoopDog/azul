@@ -1442,7 +1442,7 @@ class TestResponse(WebServiceTestCase):
             hit_sort_values = {}
             for order, response in responses.items():
                 response.raise_for_status()
-                hit_sort_values[order] = [accessor(hit) for hit in response.json()['hits']]
+                hit_sort_values[order] = [accessor(hit) for hit in response.json()['hits'] if accessor(hit) is not None]
 
             self.assertEqual(hit_sort_values['asc'], sorted(hit_sort_values['asc']))
             self.assertEqual(hit_sort_values['desc'], sorted(hit_sort_values['desc'], reverse=True))

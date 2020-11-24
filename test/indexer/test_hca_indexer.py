@@ -1026,6 +1026,31 @@ class TestHCAIndexer(IndexerTestCase):
             self.assertEqual(['E-AAAA-00'], project['array_express_accessions'])
             self.assertEqual(['PRJNA000000'], project['insdc_study_accessions'])
 
+    def test_no_cell_count_contributions(self):
+        def assert_cell_suspension(expected_cell_count, expected_organ_parts, hits):
+            expected_cell_count_ = expected_cell_count
+            if expected_cell_count is None:
+                expected_cell_count = null_int.null_int
+            for hit in hits:
+                entity_type, aggregate = self._parse_index_name(hit)
+                if entity_type == 'projects' and aggregate:
+                    self.assertEqual(expected_cell_count,
+                                     one(hit['_source']['contents']['cell_suspensions'])['total_estimated_cells'])
+                    self.assertEqual(expected_cell_count_,
+                                     one(hit['_source']['contents']['cell_suspensions'])['total_estimated_cells_'])
+                    self.assertEqual(expected_organ_parts,
+                                     one(hit['_source']['contents']['cell_suspensions'])['organ_part'])
+
+        no_cells_bundle = self._load_canned_bundle(BundleFQID('587d74b4-1075-4bbf-b96a-4d1ede0481b2',
+                                                              '2018-09-14T133314.453337Z'))
+        self._index_bundle(no_cells_bundle)
+        assert_cell_suspension(None, ['temporal lobe'], self._get_all_hits())
+        has_cells_bundle = self._load_canned_bundle(BundleFQID('3db604da-940e-49b1-9bcc-25699a55b295', ''))
+        has_cells_bundle.metadata_files['project_0.json'] = no_cells_bundle.metadata_files['project_0.json']
+        has_cells_bundle.version = '2018-09-15T133314.453337Z'
+        self._index_bundle(has_cells_bundle)
+        assert_cell_suspension(10000, ['amygdala', 'temporal lobe'], self._get_all_hits())
+
     def test_imaging_bundle(self):
         bundle_fqid = BundleFQID('94f2ba52-30c8-4de0-a78e-f95a3f8deb9c', '2019-04-03T103426.471000Z')
         self._index_canned_bundle(bundle_fqid)
