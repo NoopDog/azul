@@ -92,6 +92,7 @@ class IndexerTestCase(ElasticsearchTestCase):
             hit['_index'] = config.es_index_name(catalog=self.catalog,
                                                  entity_type=index_name.entity_type,
                                                  aggregate=index_name.aggregate)
+            hit.pop('sort')
         return expected_hits
 
     @classmethod

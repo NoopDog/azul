@@ -122,6 +122,7 @@ class TestHCAIndexer(IndexerTestCase):
                          doc_type="doc"))
         for hit in hits:
             self._verify_sorted_lists(hit)
+            hit.pop('sort')
         return hits
 
     def setUp(self) -> None:
