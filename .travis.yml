@@ -25,7 +25,7 @@ branches:
   #
   # https://github.com/travis-ci/travis-ci/issues/1147
   only:
-    - issues/danielsotirhos/2417-fix-stratification-terminology-in-cgm-adapter
+    - issues/danielsotirhos/2466-replace-cgm-dimension-names-with-hca-values
     - integration
     - staging
     - prod
