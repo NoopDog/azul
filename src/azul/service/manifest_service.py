@@ -655,6 +655,13 @@ class CurlManifestGenerator(StreamingManifestGenerator):
     def entity_type(self) -> str:
         return 'files'
 
+    @cached_property
+    def source_filter(self) -> SourceFilters:
+        return [
+            *super().source_filter,
+            'contents.files.related_files'
+        ]
+
     @classmethod
     def manifest_properties(cls, url: str) -> JSON:
         return {
@@ -705,7 +712,15 @@ class CurlManifestGenerator(StreamingManifestGenerator):
                        args=dict(version=version, catalog=self.catalog))
             output.write(f'url={self._option(url.url)}\n'
                          f'output={self._option(name)}\n\n')
+            # TODO: Properly insert `_get_related_rows` method here
         return None
+
+    def _get_related_rows(self, doc: dict, row: dict) -> Iterable[dict]:
+        file_ = one(doc['contents']['files'])
+        for related in file_['related_files']:
+            new_row = row.copy()
+            new_row.update({'file_' + k: v for k, v in related.items()})
+            yield new_row
 
 
 class CompactManifestGenerator(StreamingManifestGenerator):
