@@ -24,6 +24,9 @@ from google.auth.transport.urllib3 import (
 from google.cloud import (
     bigquery,
 )
+from google.cloud.bigquery import (
+    QueryJob,
+)
 from google.cloud.bigquery.table import (
     TableListItem,
 )
@@ -263,9 +266,9 @@ class TDRClient(SAMClient):
         delays = (10, 20, 40, 80)
         assert sum(delays) < config.contribution_lambda_timeout
         for attempt, delay in enumerate((*delays, None)):
-            job = self._bigquery(self.credentials.project_id).query(query)
+            job: QueryJob = self._bigquery(self.credentials.project_id).query(query)
             try:
-                return job.result()
+                result = job.result()
             except Forbidden as e:
                 if 'Exceeded rate limits' in e.message and delay is not None:
                     log.warning('Exceeded BigQuery rate limit during attempt %i/%i. '
@@ -274,6 +277,36 @@ class TDRClient(SAMClient):
                     sleep(delay)
                 else:
                     raise e
+            else:
+                # https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#jobstatistics2
+                job_properties = {
+                    prop: getattr(job, prop)
+                    for prop in ('query_plan',
+                                 'estimated_bytes_processed',
+                                 'timeline',
+                                 # 'total_partitions_processed',
+                                 'total_bytes_processed',
+                                 # 'total_bytes_processed_accurate',
+                                 'total_bytes_billed',
+                                 'billing_tier',
+                                 'slot_millis',
+                                 # 'reservation_usage',
+                                 'cache_hit',
+                                 'referenced_tables',
+                                 # 'referenced_routines',
+                                 'undeclared_query_parameters',
+                                 'statement_type',
+                                 'ddl_operation_performed',
+                                 'ddl_target_table',
+                                 'ddl_target_routine',
+                                 # 'export_data_statistics',
+                                 # 'external_service_cost',
+                                 # 'bi_engine_statistics',
+                                 )
+                }
+                job_properties['schema'] = result.schema
+                log.debug('Bigquery job %r, properties: %r', query, job_properties)
+                return result
         assert False
 
     def _repository_endpoint(self, *path: str) -> str:
