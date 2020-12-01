@@ -72,6 +72,7 @@ from azul import (
     CatalogName,
     cached_property,
     config,
+    reject,
 )
 from azul.json_freeze import (
     freeze,
@@ -703,9 +704,53 @@ class CurlManifestGenerator(StreamingManifestGenerator):
             url = furl(config.service_endpoint(),
                        path=f'/repository/files/{uuid}',
                        args=dict(version=version, catalog=self.catalog))
+            name = self._validate(name)
             output.write(f'url={self._option(url.url)}\n'
                          f'output={self._option(name)}\n\n')
         return None
+
+    @classmethod
+    def _validate(cls, path: str):
+        """
+        >>> f = CurlManifestGenerator._validate
+        >>> f('foo/bar/\\x1F/file')
+        Traceback (most recent call last):
+        ...
+        azul.RequirementError: Invalid file name 'foo/bar/\\x1f/file'
+
+        >>> f('foo/bar/\\/file')
+        Traceback (most recent call last):
+        ...
+        azul.RequirementError: Invalid file name 'foo/bar/\\\\/file'
+
+        >>> f('foo/bar/COM6/file')
+        Traceback (most recent call last):
+        ...
+        azul.RequirementError: Invalid file name 'foo/bar/COM6/file'
+
+        >>> f('foo/bar?/fi*le|')
+        'foo/bar_/fi_le_'
+
+        >>> f('foo/bar/file.fastqgz')
+        'foo/bar/file.fastqgz'
+        """
+        msg = f'Invalid file name {path!r}'
+        for character in path:
+            reject(unicodedata.category(character) == 'Cc'
+                   or character == u'\\',
+                   msg)
+        path = re.sub(r'[<>:"|?*]', '_', path).strip()
+        re_name = re.match(r'^(\.?[^./ ])([^/]*[^./ ])?(/(\.?[^./ ])([^/]*[^./ ])?)*$',
+                           path)
+        reject(re_name is None, msg)
+        assert re_name.string == path, re_name.string
+        commands = ['CON', 'PRN', 'AUX', 'NUL']
+        commands.extend([f'{cmd}{i}'
+                         for cmd in ['COM', 'LPT']
+                         for i in range(1, 10)])
+        for component in path.split('/'):
+            reject(component in commands, msg)
+        return path
 
 
 class CompactManifestGenerator(StreamingManifestGenerator):
