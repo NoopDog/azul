@@ -194,8 +194,10 @@ class AzulClient(object):
 
     @cached_property
     def sqs(self):
-        import boto3
-        return boto3.resource('sqs')
+        from azul.deployment import (
+            aws,
+        )
+        return aws.resource('sqs')
 
     @cached_property
     def notifications_queue(self):
