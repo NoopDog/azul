@@ -17,6 +17,13 @@ from azul.types import (
     JSON,
 )
 
+default_order_of_matrix_dimensions = [
+    'genusSpecies',
+    'developmentStage',
+    'organ',
+    'libraryConstructionApproach',
+]
+
 
 def make_stratification_tree(files: Sequence[Mapping[str, str]],
                              ) -> JSON:
@@ -25,18 +32,22 @@ def make_stratification_tree(files: Sequence[Mapping[str, str]],
     >>> def f(files):
     ...     return assert_json(make_stratification_tree(files))
 
-    >>> f([{'uuid': 'u', 'version': 'v', 'name': 'n', 'strata': 'a=1;b=2'}])
+    >>> f([{'uuid': 'u', 'version': 'v', 'name': 'n', 'strata': 'developmentStage=2;genusSpecies=1;organ=3'}])
     {
-        "a": {
+        "genusSpecies": {
             "1": {
-                "b": {
-                    "2": [
-                        {
-                            "uuid": "u",
-                            "version": "v",
-                            "name": "n"
+                "developmentStage": {
+                    "2": {
+                        "organ": {
+                            "3": [
+                                {
+                                    "uuid": "u",
+                                    "version": "v",
+                                    "name": "n"
+                                }
+                            ]
                         }
-                    ]
+                    }
                 }
             }
         }
@@ -142,15 +153,24 @@ def make_stratification_tree(files: Sequence[Mapping[str, str]],
         for file in files
     ]
 
+    def dimension_placement(dimension: str) -> int:
+        if dimension in default_order_of_matrix_dimensions:
+            return default_order_of_matrix_dimensions.index(dimension)
+        else:
+            return len(default_order_of_matrix_dimensions)
+
     # To produce a tree with the most shared base branches possible we sort
-    # the dimensions by number of distinct values on that dimension.
+    # the dimensions by number of distinct values on each dimension, and
+    # secondarily sort according to the defined default ordering.
     distinct_values = defaultdict(set)
     for file in files:
         for stratum in file['strata']:
             for dimension, value in stratum.items():
                 distinct_values[dimension].add(value)
     sorted_dimensions = sorted(distinct_values,
-                               key=lambda k: len(distinct_values[k]))
+                               key=lambda k: (len(distinct_values[k]),
+                                              dimension_placement(k),
+                                              k))
 
     # Verify that every stratum uses the same dimensions
     # FIXME: Allow CGM stratification tree with varying dimensions
