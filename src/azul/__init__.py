@@ -1,3 +1,4 @@
+import functools
 import logging
 import os
 import re
@@ -24,6 +25,14 @@ Netloc = Tuple[str, int]
 CatalogName = str
 
 cached_property = boltons.cacheutils.cachedproperty
+
+lru_cache = functools.lru_cache
+
+
+# This is anticipating https://github.com/python/cpython/blob/3.9/Lib/functools.py#L650
+#
+def cache(f, /):
+    return lru_cache(maxsize=None)(f)
 
 
 class Config:

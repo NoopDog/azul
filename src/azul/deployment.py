@@ -1,9 +1,6 @@
 from contextlib import (
     contextmanager,
 )
-from functools import (
-    lru_cache,
-)
 import inspect
 import json
 import logging
@@ -29,6 +26,7 @@ import botocore.session
 
 from azul import (
     Netloc,
+    cache,
     cached_property,
     config,
 )
@@ -52,7 +50,7 @@ def _cache(func):
     instead of @cached_property or @lru_cache.
     """
 
-    @lru_cache(maxsize=None)
+    @cache
     def cached_func(_session, self, *args, **kwargs):
         return func(self, *args, **kwargs)
 
