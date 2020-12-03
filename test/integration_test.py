@@ -34,7 +34,6 @@ from typing import (
     Optional,
     Sequence,
     Tuple,
-    cast,
 )
 import unittest
 from unittest import (
@@ -609,7 +608,18 @@ class AzulClientIntegrationTest(IntegrationTestCase):
                           notifications)
 
 
-class PortalRegistrationIntegrationTest(IntegrationTestCase):
+class PortalRegistrationIntegrationTest(IntegrationTestCase, AlwaysTearDownTestCase):
+    # Currently takes about 50 seconds and creates a 25 kb db file.
+    n_threads = 10
+    n_tasks = n_threads * 10
+    n_ops = 5
+
+    @cached_property
+    def portal_service(self):
+        return PortalService()
+
+    def setUp(self) -> None:
+        self.old_db = self.portal_service.read()
 
     # FIXME: Re-enable once overloading of S3 API is resolved
     #        https://github.com/DataBiosphere/azul/issues/2399
@@ -619,18 +629,11 @@ class PortalRegistrationIntegrationTest(IntegrationTestCase):
         Use multithreading to simulate multiple users simultaneously modifying
         the portals database.
         """
-
-        # Currently takes about 50 seconds and creates a 25 kb db file.
-        n_threads = 10
-        n_tasks = n_threads * 10
-        n_ops = 5
-        portal_service = PortalService()
-
         entry_format = 'task={};op={}'
 
         def run(thread_count):
-            for op_count in range(n_ops):
-                mock_entry = cast(JSON, {
+            for op_count in range(self.n_ops):
+                mock_entry = {
                     "portal_id": "foo",
                     "integrations": [
                         {
@@ -641,26 +644,25 @@ class PortalRegistrationIntegrationTest(IntegrationTestCase):
                         }
                     ],
                     "mock-count": entry_format.format(thread_count, op_count)
-                })
-                portal_service._crud(lambda db: list(db) + [mock_entry])
+                }
+                self.portal_service._crud(lambda db: [*db, mock_entry])
 
-        old_db = portal_service.read()
-
-        with ThreadPoolExecutor(max_workers=n_threads) as executor:
-            futures = [executor.submit(run, i) for i in range(n_tasks)]
+        with ThreadPoolExecutor(max_workers=self.n_threads) as executor:
+            futures = [executor.submit(run, i) for i in range(self.n_tasks)]
 
         self.assertTrue(all(f.result() is None for f in futures))
 
-        new_db = portal_service.read()
+        new_db = self.portal_service.read()
 
         old_entries = [portal for portal in new_db if 'mock-count' not in portal]
-        self.assertEqual(old_entries, old_db)
+        self.assertEqual(old_entries, self.old_db)
         mock_counts = [portal['mock-count'] for portal in new_db if 'mock-count' in portal]
         self.assertEqual(len(mock_counts), len(set(mock_counts)))
-        self.assertEqual(set(mock_counts), {entry_format.format(i, j) for i in range(n_tasks) for j in range(n_ops)})
+        self.assertEqual(set(mock_counts), {entry_format.format(i, j)
+                                            for i in range(self.n_tasks) for j in range(self.n_ops)})
 
-        # Reset to pre-test state.
-        portal_service.overwrite(old_db)
+    def tearDown(self) -> None:
+        self.portal_service.overwrite(self.old_db)
 
 
 class OpenAPIIntegrationTest(AzulTestCase):
